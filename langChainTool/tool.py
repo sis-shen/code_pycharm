@@ -83,53 +83,73 @@
 
 # ---------
 
-from pydantic import BaseModel,Field
-from typing import Tuple,List
-
-class MulInput(BaseModel):
-    """两数相乘求积"""
-    a: int = Field(..., description="First Integer")
-    b: int = Field(..., description="Second Integer")
-
-def mul(a:int, b:int)->Tuple[int,List[int]]:
-    nums = [a,b]
-    content = f"{nums}相乘的结果为{a*b}"
-    return content,nums
-from langchain_core.tools import StructuredTool
-
-mul_tool = StructuredTool.from_function(
-    func=mul,
-    name="Calculator",
-    description="两数相乘求积",
-    args_schema=MulInput,
-    response_format="content_and_artifact"
-)
+# from pydantic import BaseModel,Field
+# from typing import Tuple,List
+#
+# class MulInput(BaseModel):
+#     """两数相乘求积"""
+#     a: int = Field(..., description="First Integer")
+#     b: int = Field(..., description="Second Integer")
+#
+# def mul(a:int, b:int)->Tuple[int,List[int]]:
+#     nums = [a,b]
+#     content = f"{nums}相乘的结果为{a*b}"
+#     return content,nums
+# from langchain_core.tools import StructuredTool
+#
+# mul_tool = StructuredTool.from_function(
+#     func=mul,
+#     name="Calculator",
+#     description="两数相乘求积",
+#     args_schema=MulInput,
+#     response_format="content_and_artifact"
+# )
+#
+# from langchain_openai import ChatOpenAI
+# from langchain_core.messages import HumanMessage,ToolMessage
+#
+# model = ChatOpenAI(model="deepseek-chat",openai_api_base="https://api.deepseek.com/v1")
+# model_with_tool =model.bind_tools([mul_tool])
+#
+# messages = [
+#     HumanMessage("3乘5等于多少")
+# ]
+# ai_msg = model_with_tool.invoke(messages)
+#
+# messages.append(ai_msg)
+#
+# for tool_call in ai_msg.tool_calls:
+#     selected_tool = {
+#         "Calculator":mul_tool
+#     }
+#     tool_msg = selected_tool[tool_call["name"]].invoke(tool_call)
+#     messages.append(tool_msg)
+#
+# print(messages)
+# result = model_with_tool.invoke(messages)
+# print(result)
+# print(result.content)
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage,ToolMessage
+from langchain_core.messages import HumanMessage
 from langchain_tavily import TavilySearch
 
-
+tavily_tool = TavilySearch(max_results=4)
 
 model = ChatOpenAI(model="deepseek-chat",openai_api_base="https://api.deepseek.com/v1")
-model_with_tool =model.bind_tools([mul_tool])
+model_with_tool =model.bind_tools([tavily_tool])
+model.with_structured_output()
 
 messages = [
-    HumanMessage("3乘5等于多少")
+    HumanMessage("中国湖南长沙的天气怎么样")
 ]
 ai_msg = model_with_tool.invoke(messages)
 
 messages.append(ai_msg)
 
 for tool_call in ai_msg.tool_calls:
-    selected_tool = {
-        "Calculator":mul_tool
-    }
-    tool_msg = selected_tool[tool_call["name"]].invoke(tool_call)
+    tool_msg = tavily_tool.invoke(tool_call)
     messages.append(tool_msg)
 
-print(messages)
 result = model_with_tool.invoke(messages)
-print(result)
 print(result.content)
-
